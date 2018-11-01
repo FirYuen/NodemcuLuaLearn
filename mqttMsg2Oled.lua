@@ -7,6 +7,7 @@ function init_spi_display()
     disp = u8g2.ssd1306_128x64_noname(1, cs, dc, res)
 end
 
+init_spi_display()
 
 gpio.mode(0, gpio.OUTPUT)
 gpio.mode(4, gpio.OUTPUT)
@@ -35,33 +36,39 @@ end
 
 function draw(y,str)
     if str ~=nil then
-        disp:clearBuffer()
+        
         u8g2_prepare()
-        disp:drawStr( 0, y, str)
-        disp:sendBuffer()
+        disp:drawStr( 2, y, str)
+
     end
 end
 
-strarr={}
 function wrtoscreen(str)
-   if #str>21 then
-    strlen = #str
-    print(strlen)
+     disp:clearBuffer()
+if #str>21 then
+strarr={}
+	str=string.sub(str,1,126)
+    local strlen = #str
+    local arrlen=0
      if strlen%21~=0 then
           arrlen=(strlen-strlen%21)/21+1
      else 
           arrlen=(strlen-strlen%21)/21
      end
-    print(arrlen)
+   
     for i=1,arrlen,1 do
         strarr[i]=string.sub(str,(i-1)*21+1,i*21)
      end
-     for j=1,#strarr,1 do
-          print(#strarr)
-          print(strarr[j])
-     end
+
+    for j=1,#strarr,1 do
+     draw((j-1)*10,strarr[j])
+   end
+   disp:sendBuffer()
      else 
-          print(str)
+          disp:clearBuffer()
+          draw(0,str)
+          disp:sendBuffer()
+          --print(str)
     end
 end
 
@@ -70,7 +77,6 @@ m = mqtt.Client("NodeMCU_Client_fi", 120,"iotfreetest/thing01","YU7Tov8zFW+WuaLx
 
 m:on("connect", function(client) print ("connected") end)
 m:on("offline", function(client) 
-
     print ("offline") 
     mqtt_connecting=0
     reconnect()
@@ -79,7 +85,7 @@ end)
 m:on("message", function(client, topic, data) 
   if data ~= nil then
     print( topic.. ":".. data)
-    draw(0,data)
+          wrtoscreen(data)
      if data =="bule on"then
           gpio.write(4, gpio.LOW)   
      elseif data =="bule off"then
@@ -142,6 +148,3 @@ end
 
 --m:close(); --stop mqtt
 
-
-
-init_spi_display()
